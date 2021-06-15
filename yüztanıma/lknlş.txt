@@ -1,0 +1,118 @@
+
+veriseti olosturucu
+-----------------------
+import cv2
+cam = cv2.VideoCapture(0)
+detector=cv2.CascadeClassifier('face.xml')
+i=0
+offset=50
+kisi_id=input('ID numarasý giriniz')
+while True:
+    _, img =cam.read()
+    gray=cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+    faces=detector.detectMultiScale(gray, scaleFactor=1.2, minNeighbors=5, minSize=(100, 100), flags=cv2.CASCADE_SCALE_IMAGE)
+    for(x,y,w,h) in faces:
+        i=i+1
+        cv2.imwrite("yuzverileri/face-" + kisi_id + '.' + str(i) + ".jpg", gray[y-offset:y + h+offset , x-offset :x + w+offset])
+        cv2.rectangle(img, (x-offset , y-offset), (x + w+offset, y + h+offset), (225, 0, 0), 2)
+        cv2.imshow('resim', img[y :y + h, x :x + w])
+        cv2.waitKey(100)
+    if i>20:
+        cam.release()
+        cv2.destroyAllWindows()
+        break
+
+
+eðitme
+------------------------------------------------
+
+import cv2,os
+import numpy as np
+from PIL import Image
+
+recognizer = cv2.face.LBPHFaceRecognizer_create()
+cascadePath = "face.xml"
+faceCascade = cv2.CascadeClassifier(cascadePath)
+path = 'yuzverileri'
+
+def get_images_and_labels(path):
+     image_paths = [os.path.join(path, f) for f in os.listdir(path)]
+     images = []
+     labels = []
+     for image_path in image_paths:
+         image_pil = Image.open(image_path).convert('L')
+         image = np.array(image_pil, 'uint8')
+         nbr = int(os.path.split(image_path)[1].split(".")[0].replace("face-", ""))
+         print(nbr)
+         faces = faceCascade.detectMultiScale(image)
+         for (x, y, w, h) in faces:
+             images.append(image[y: y + h, x: x + w])
+             labels.append(nbr)
+             cv2.imshow("resimler eðitme serisine ekleniyor..", image[y: y + h, x: x + w])
+             cv2.waitKey(10)
+     return images, labels
+
+
+images, labels = get_images_and_labels(path)
+cv2.imshow("test",images[0])
+cv2.waitKey(1)
+
+recognizer.train(images, np.array(labels))
+recognizer.write('training/trainer.yml')
+cv2.destroyAllWindows()
+
+
+tesbit edici
+---------------------------------------
+
+import cv2
+
+
+recognizer=cv2.face.LBPHFaceRecognizer_create()
+recognizer.read('training/trainer.yml')
+cascadePath = "face.xml"
+faceCascade = cv2.CascadeClassifier(cascadePath)
+path = 'yuzverileri'
+
+cam = cv2.VideoCapture(0)
+while True:
+    ret, im =cam.read()
+    gray=cv2.cvtColor(im,cv2.COLOR_BGR2GRAY)
+    faces=faceCascade.detectMultiScale(gray, scaleFactor=1.2, minNeighbors=5, minSize=(100, 100), flags=cv2.CASCADE_SCALE_IMAGE)
+    for(x,y,w,h) in faces:
+        tahminEdilenKisi, conf = recognizer.predict(gray[y:y + h, x:x + w])
+        cv2.rectangle(im,(x,y),(x+w,y+h),(225,0,0),2)
+        if(tahminEdilenKisi==2):
+             tahminEdilenKisi= 'Fatih Hafýzoðlu'
+        elif (tahminEdilenKisi == 1):
+            tahminEdilenKisi = 'Aziz Sancar'
+        else:
+            tahminEdilenKisi= "Bilinmeyen kiþi"
+        fontFace = cv2.FONT_HERSHEY_SIMPLEX
+        fontScale = 1
+        fontColor = (255, 255, 255)
+        cv2.putText(im, str(tahminEdilenKisi), (x, y + h), fontFace, fontScale, fontColor)
+        cv2.imshow('im',im)
+        cv2.waitKey(10)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
